@@ -7,13 +7,25 @@
     "module": "CommonJS",
     "target": "ES2017",
     "outDir": "dist",
-    "baseUrl": ".",
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
     "types": [
       "./types/mediaType.d.ts",
       "./types/plugin.d.ts",
       "./types/nanoMeting.d.ts"
     ]
   },
-  "include": ["./types/*", "./src/**/*"]
+  "include": [
+    "./types/*",
+    "./src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
