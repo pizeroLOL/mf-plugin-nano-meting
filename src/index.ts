@@ -74,6 +74,18 @@ async function search<T extends IMedia.SupportMediaType>(
   } as IPlugin.ISearchResult<"music">;
 }
 
+async function getMediaSource(
+  musicItem: IMusic.IMusicItemPartial,
+  quality: IMusic.IQualityKey,
+): Promise<IPlugin.IMediaSourceResult | null> {
+  return {
+    ...musicItem,
+    headers: {
+      Referer: "https://metingapi.nanorocky.top/",
+    },
+  };
+}
+
 export default {
   platform: "nano-meting",
   author: "Pizero",
@@ -85,4 +97,5 @@ export default {
   supportedSearchType: ["music"],
   // TODO: 在这里把插件剩余的功能补充完整
   search,
+  getMediaSource,
 } as IPlugin.IPluginDefine;
