@@ -12,7 +12,7 @@ const buildHeader = () => ({
   ...HEADERS,
   USERK: (() => {
     try {
-      env.getUserVariables()["user_key"];
+      return env.getUserVariables()["user_key"];
     } catch {
       return undefined;
     }
