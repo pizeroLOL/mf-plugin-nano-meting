@@ -157,21 +157,28 @@ async function getMusicInfo(
     if (rsp.length < 1) {
       return null;
     }
-    const picRsp = await fetch(rsp[0].pic, {
-      headers: buildHeader(),
-      redirect: "manual",
-    });
-    const picLocation = picRsp.headers.get("Location");
-    return picLocation === null
-      ? null
-      : {
-          artist: rsp[0].artist,
-          title: rsp[0].name,
-          url: rsp[0].url,
-          lrc: rsp[0].lrc,
-          artwork: picLocation,
-          platform: musicBase.platform,
-        };
+    return {
+      artist: rsp[0].artist,
+      title: rsp[0].name,
+      url: rsp[0].url,
+      lrc: rsp[0].lrc,
+      artwork:
+        musicBase.platform !== "tencent"
+          ? rsp[0].pic
+          : await (async function () {
+              try {
+                const picRsp = await fetch(rsp[0].pic, {
+                  headers: buildHeader(),
+                  redirect: "manual",
+                });
+                const picLocation = picRsp.headers.get("Location");
+                return picLocation === null ? rsp[0].pic : picLocation;
+              } catch {
+                return rsp[0].pic;
+              }
+            })(),
+      platform: musicBase.platform,
+    };
   } catch (e) {
     return null;
   }
