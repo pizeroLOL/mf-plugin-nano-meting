@@ -64,7 +64,7 @@ async function search<T extends IMedia.SupportMediaType>(
   return {
     isEnd: true,
     data: Array.from({ length: Math.max(a.length, b.length) }).reduce(
-      (acc: IMusic.IMusicItem, _, i) => {
+      (acc: IMusic.IMusicItem[], _, i) => {
         if (i < a.length) acc.push(a[i]);
         if (i < b.length) acc.push(b[i]);
         return acc;
