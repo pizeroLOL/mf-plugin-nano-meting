@@ -32,7 +32,7 @@ declare namespace NanoMeting {
     url: string;
     pic: string;
     lrc: string;
-    sourse: Provider;
+    source: Provider;
   }
   type SearchRsp = SearchPspItem[];
 }
