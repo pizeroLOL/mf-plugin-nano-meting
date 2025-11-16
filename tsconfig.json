@@ -15,5 +15,5 @@
       "./types/nanoMeting.d.ts"
     ]
   },
-  "include": ["./types/*", "./src/**/*"]
+  "include": ["./types/*", "./src/**/*", "./node_modules/bun-types/**/*"]
 }

@@ -2,6 +2,11 @@
  * 预置的类型
  * WARNING: 不要修改此文件的类型定义！！！
  */
+declare const env:
+  | {
+      getUserVariables(): Record<string, string>;
+    }
+  | undefined;
 
 declare namespace ICommon {
   type WithMusicList<T> = T & {
@@ -76,6 +81,10 @@ declare namespace ILyric {
   interface ILyricSource {
     lrc?: string;
     rawLrc?: string;
+    /**
+     * 根据文档添加
+     */
+    translation?: string;
   }
 
   interface ILyricItem extends IMusic.IMusicItem {
@@ -131,7 +140,7 @@ declare namespace IPlugin {
     /** 页码，从 1 开始 */
     page: number,
     /** 支持的搜索类型 */
-    type: T
+    type: T,
   ) => Promise<ISearchResult<T>>;
 
   interface IAlbumInfoResult {
@@ -161,10 +170,9 @@ declare namespace IPlugin {
     /** 页码，从1开始 */
     page: number,
     /** 音乐或专辑 */
-    type: T
+    type: T,
   ) => Promise<ISearchResult<T>>;
 
-  
   /** 插件的定义 */
   interface IPluginDefine {
     /**
@@ -210,15 +218,15 @@ declare namespace IPlugin {
     /** 获取根据音乐信息获取url */
     getMediaSource?: (
       musicItem: IMusic.IMusicItemPartial,
-      quality: IMusic.IQualityKey
+      quality: IMusic.IQualityKey,
     ) => Promise<IMediaSourceResult | null>;
     /** 根据主键去查询歌曲信息 */
     getMusicInfo?: (
-      musicBase: IMedia.IMediaBase
+      musicBase: IMedia.IMediaBase,
     ) => Promise<Partial<IMusic.IMusicItem> | null>;
     /** 根据音乐信息获取歌词 */
     getLyric?: (
-      musicItem: IMusic.IMusicItemPartial
+      musicItem: IMusic.IMusicItemPartial,
     ) => Promise<ILyric.ILyricSource | null>;
     /**
      * 获取专辑信息，里面的歌曲分页
@@ -227,7 +235,7 @@ declare namespace IPlugin {
      */
     getAlbumInfo?: (
       albumItem: IAlbum.IAlbumItem,
-      page: number
+      page: number,
     ) => Promise<IAlbumInfoResult | null>;
     /**
      * 获取歌单信息，有分页
@@ -236,7 +244,7 @@ declare namespace IPlugin {
      */
     getMusicSheetInfo?: (
       sheetItem: IMusic.IMusicSheetItem,
-      page: number
+      page: number,
     ) => Promise<ISheetInfoResult | null>;
     /** 获取作品，有分页 */
     getArtistWorks?: IGetArtistWorksFunc;
@@ -248,18 +256,18 @@ declare namespace IPlugin {
     getTopLists?: () => Promise<IMusic.IMusicSheetGroupItem[]>;
     /** 获取榜单详情 */
     getTopListDetail?: (
-      topListItem: IMusic.IMusicSheetItem
+      topListItem: IMusic.IMusicSheetItem,
     ) => Promise<ICommon.WithMusicList<IMusic.IMusicSheetItem>>;
     /** 获取热门歌单tag */
     getRecommendSheetTags?: () => Promise<IGetRecommendSheetTagsResult>;
-    /** 
+    /**
      * 歌单列表
      *
      * page从1开始
      */
     getRecommendSheetsByTag?: (
       tag: IMedia.IUnique,
-      page?: number
+      page?: number,
     ) => Promise<ICommon.PaginationResponse<IMusic.IMusicSheetItem>>;
   }
 }

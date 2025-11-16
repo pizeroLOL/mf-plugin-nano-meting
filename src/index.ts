@@ -1,4 +1,24 @@
 const NANO_METING = "https://metingapi.nanorocky.top/";
+const ORIGIN = "https://musicfree.catcat.work";
+const REFERER = "https://musicfree.catcat.work/";
+const UA = "MusicFree_Client";
+const HEADERS = {
+  Referer: REFERER,
+  Origin: ORIGIN,
+  "User-Agent": UA,
+};
+
+const buildHeader = () => ({
+  ...HEADERS,
+  USERK: (() => {
+    try {
+      env.getUserVariables()["user_key"];
+    } catch {
+      return undefined;
+    }
+  })(),
+});
+
 const buildUrl = (query: NanoMeting.SearchParams) => {
   const url = new URL(NANO_METING);
   Object.entries(query).reduce((acc, [k, v]) => {
@@ -18,12 +38,7 @@ async function searchByProvider(query: string, server: NanoMeting.Provider) {
         keyword: query,
       }),
       {
-        headers: {
-          Referer:
-            query === "netease"
-              ? undefined
-              : "https://metingapi.nanorocky.top/",
-        },
+        headers: buildHeader(),
       },
     );
     const i = await iData.json();
@@ -80,22 +95,50 @@ async function getMediaSource(
 ): Promise<IPlugin.IMediaSourceResult | null> {
   return {
     ...musicItem,
-    headers: {
-      Referer: "https://metingapi.nanorocky.top/",
-    },
+    headers: buildHeader(),
   };
+}
+
+async function getLyric(
+  musicItem: IMusic.IMusicItemPartial,
+): Promise<ILyric.ILyricSource | null> {
+  if (!musicItem.id || !musicItem.lrc) {
+    return null;
+  }
+  try {
+    const url = musicItem.lrc;
+    const translationUrl = new URL(url);
+    translationUrl.searchParams.set("trlrc", "only");
+    const rawLyricReq = await fetch(url, {
+      headers: buildHeader(),
+    });
+    const rawLrc = await rawLyricReq.text();
+    const translationReq = await fetch(translationUrl, {
+      headers: buildHeader(),
+    });
+    const translation = await translationReq.text();
+    return {
+      rawLrc,
+      translation,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export default {
   platform: "nano-meting",
   author: "Pizero",
+  appVersion: ">0.1.2-alpha.0",
   // TODO: update
   // srcUrl: "https://example.catcat.work/xxx.js",
   primaryKey: ["id", "platform"],
+  userVariables: [{ key: "user_key", title: "用户密钥" }],
   cacheControl: "cache",
   version: "0.0.0",
   supportedSearchType: ["music"],
   // TODO: 在这里把插件剩余的功能补充完整
   search,
   getMediaSource,
+  getLyric,
 } as IPlugin.IPluginDefine;
