@@ -41,21 +41,31 @@ async function searchByProvider(query: string, server: NanoMeting.Provider) {
         headers: buildHeader(),
       },
     );
-    const i = await iData.json();
-    const o = {
-      isEnd: true,
-      data: (i as NanoMeting.SearchRsp).map((i) => ({
+    const search = (await iData.json()) as NanoMeting.SearchRsp;
+    const data = [] as IMusic.IMusicItem[];
+    // 这里写成这个逆天样子不是故意的，访问太快容易把 NanoRocky 的腾讯防火墙干出来，还得等 10 秒左右差不多才正常，搜索比较后面的也不正常
+    // man what can i say
+    for (const i of search) {
+      data.push({
         artist: i.artist,
         title: i.name,
         album: i.album,
-        artwork: i.pic,
+        artwork:
+          server !== "tencent"
+            ? i.pic
+            : await fetch(i.pic, {
+                headers: buildHeader(),
+                redirect: "manual",
+              })
+                .then((i) => i.headers.get("Location"))
+                .then((url) => (i === null ? i.pic : url)),
         url: i.url,
         lrc: i.lrc,
         platform: server,
         id: new URL(i.url).searchParams.get("id"),
-      })),
-    } as IPlugin.ISearchResult<"music">;
-    return o;
+      });
+    }
+    return { isEnd: true, data } as IPlugin.ISearchResult<"music">;
   } catch {
     return { isEnd: true, data: [] } as IPlugin.ISearchResult<"music">;
   }
@@ -126,6 +136,47 @@ async function getLyric(
   }
 }
 
+async function getMusicInfo(
+  musicBase: IMedia.IMediaBase,
+): Promise<Partial<IMusic.IMusicItem> | null> {
+  if (musicBase.platform !== "netease" && musicBase.platform !== "tencent") {
+    return null;
+  }
+  try {
+    const req = await fetch(
+      buildUrl({
+        server: musicBase.platform,
+        type: "song",
+        id: String(musicBase.id),
+      }),
+      {
+        headers: buildHeader(),
+      },
+    );
+    const rsp = (await req.json()) as NanoMeting.SongItem[];
+    if (rsp.length < 1) {
+      return null;
+    }
+    const picRsp = await fetch(rsp[0].pic, {
+      headers: buildHeader(),
+      redirect: "manual",
+    });
+    const picLocation = picRsp.headers.get("Location");
+    return picLocation === null
+      ? null
+      : {
+          artist: rsp[0].artist,
+          title: rsp[0].name,
+          url: rsp[0].url,
+          lrc: rsp[0].lrc,
+          artwork: picLocation,
+          platform: musicBase.platform,
+        };
+  } catch (e) {
+    return null;
+  }
+}
+
 export default {
   platform: "nano-meting",
   author: "Pizero",
@@ -141,4 +192,5 @@ export default {
   search,
   getMediaSource,
   getLyric,
+  getMusicInfo,
 } as IPlugin.IPluginDefine;

@@ -21,3 +21,14 @@ test("tencent has lyric", async () => {
   expect(o.rawLrc).not.toBeNull();
   expect(o.translation).not.toBeNull();
 });
+test("tencent can access artwork", async () => {
+  const list = await plugin.search("群青", 0, "music");
+  const listItem = list.data[1];
+  expect(listItem.platform).toBe("tencent");
+  expect(listItem.artwork.indexOf("meting")).not.toBe(0);
+
+  const o = await plugin.getMusicInfo(listItem);
+  expect(o).not.toBeNull();
+  expect(o.artwork).not.toBeUndefined();
+  expect(o.artwork.indexOf("meting")).not.toBe(0);
+});

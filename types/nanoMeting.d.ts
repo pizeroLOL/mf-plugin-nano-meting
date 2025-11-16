@@ -18,6 +18,13 @@ declare namespace NanoMeting {
     dwrc?: boolean | "open";
     trlrc?: boolean | "only";
   }
+  interface SongItem {
+    name: string;
+    artist: string;
+    url: string;
+    pic: string;
+    lrc: string;
+  }
   interface SearchPspItem {
     name: string;
     artist: string;
