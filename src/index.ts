@@ -8,67 +8,76 @@ const HEADERS = {
   "User-Agent": UA,
 };
 
-const buildHeader = () => ({
-  ...HEADERS,
-  USERK: (() => {
-    try {
-      return env.getUserVariables()["user_key"];
-    } catch {
-      return undefined;
-    }
-  })(),
-});
+function buildHeader() {
+  return {
+    ...HEADERS,
+    USERK: (() => {
+      try {
+        return env.getUserVariables()["user_key"];
+      } catch {
+        return undefined;
+      }
+    })(),
+  };
+}
 
-const buildUrl = (query: NanoMeting.SearchParams) => {
+function buildUrl(query: NanoMeting.SearchParams) {
   const url = new URL(NANO_METING);
   Object.entries(query).reduce((acc, [k, v]) => {
     acc.append(k, v);
     return acc;
   }, url.searchParams);
   return url;
-};
+}
+
+function fetchJson<T>(url: RequestInfo | URL): Promise<T | undefined> {
+  return fetch(url, {
+    headers: buildHeader(),
+  })
+    .then((i) => i.json() as Promise<T>)
+    .catch((i) => undefined);
+}
+
+async function fetchRedirect(
+  url: RequestInfo | URL,
+): Promise<RequestInfo | URL> {
+  const res = await fetch(url, {
+    headers: buildHeader(),
+    redirect: "manual",
+  });
+  const location = res.headers.get("Location");
+  return location === null ? url : location;
+}
 
 async function searchByProvider(query: string, server: NanoMeting.Provider) {
-  try {
-    const iData = await fetch(
-      buildUrl({
-        server,
-        type: "search",
-        id: "0",
-        keyword: query,
-      }),
-      {
-        headers: buildHeader(),
-      },
-    );
-    const search = (await iData.json()) as NanoMeting.SearchRsp;
-    const data = [] as IMusic.IMusicItem[];
-    // 这里写成这个逆天样子不是故意的，访问太快容易把 NanoRocky 的腾讯防火墙干出来，还得等 10 秒左右差不多才正常，搜索比较后面的也不正常
-    // man what can i say
-    for (const i of search) {
-      data.push({
-        artist: i.artist,
-        title: i.name,
-        album: i.album,
-        artwork:
-          server !== "tencent"
-            ? i.pic
-            : await fetch(i.pic, {
-                headers: buildHeader(),
-                redirect: "manual",
-              })
-                .then((i) => i.headers.get("Location"))
-                .then((url) => (i === null ? i.pic : url)),
-        url: i.url,
-        lrc: i.lrc,
-        platform: server,
-        id: new URL(i.url).searchParams.get("id"),
-      });
-    }
-    return { isEnd: true, data } as IPlugin.ISearchResult<"music">;
-  } catch {
+  const search = (await fetchJson(
+    buildUrl({
+      server,
+      type: "search",
+      id: "0",
+      keyword: query,
+    }),
+  )) as NanoMeting.SearchRsp | undefined;
+  if (search === undefined) {
     return { isEnd: true, data: [] } as IPlugin.ISearchResult<"music">;
   }
+  const data = [] as IMusic.IMusicItem[];
+  // 这里写成这个逆天样子不是故意的，访问太快容易把 NanoRocky 的腾讯防火墙干出来，还得等 10 秒左右差不多才正常，搜索比较后面的也不正常
+  // man what can i say
+  for (const i of search) {
+    data.push({
+      artist: i.artist,
+      title: i.name,
+      album: i.album,
+      artwork:
+        server !== "tencent" ? i.pic : (await fetchRedirect(i.pic)).toString(),
+      url: i.url,
+      lrc: i.lrc,
+      platform: server,
+      id: new URL(i.url).searchParams.get("id"),
+    });
+  }
+  return { isEnd: true, data } as IPlugin.ISearchResult<"music">;
 }
 
 async function search<T extends IMedia.SupportMediaType>(
@@ -165,18 +174,7 @@ async function getMusicInfo(
       artwork:
         musicBase.platform !== "tencent"
           ? rsp[0].pic
-          : await (async function () {
-              try {
-                const picRsp = await fetch(rsp[0].pic, {
-                  headers: buildHeader(),
-                  redirect: "manual",
-                });
-                const picLocation = picRsp.headers.get("Location");
-                return picLocation === null ? rsp[0].pic : picLocation;
-              } catch {
-                return rsp[0].pic;
-              }
-            })(),
+          : (await fetchRedirect(rsp[0].pic)).toString(),
       platform: musicBase.platform,
     };
   } catch (e) {
